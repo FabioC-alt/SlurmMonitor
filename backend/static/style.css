@@ -1,0 +1,156 @@
+:root {
+  --bg: #0d1420;
+  --panel: #131d2c;
+  --panel-border: #223146;
+  --text: #e8eef5;
+  --muted: #7f93ab;
+  --accent: #5bc3ff;
+  --accent-2: #7de3d1;
+  --danger: #f87171;
+  --warn: #f0b559;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--panel-border);
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+header h1 { font-size: 20px; margin: 0; }
+header .subtitle { color: var(--muted); font-size: 13px; }
+header .header-status {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+}
+header .header-status.status-error { color: var(--danger); }
+
+main {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.card h3 { margin: 0 0 8px 0; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.card .big { font-size: 28px; font-weight: 600; }
+.card .big.pos { color: var(--accent-2); }
+.card .big.neg { color: var(--danger); }
+
+.section-title { font-size: 16px; margin: 28px 0 12px 0; color: var(--text); }
+.section-note { color: var(--muted); font-size: 13px; margin: -6px 0 16px 0; line-height: 1.5; }
+
+.pos { color: var(--accent-2); }
+.neg { color: var(--danger); }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.controls input,
+.controls select {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.controls input { flex: 1 1 220px; min-width: 180px; }
+
+.state-filters { display: flex; gap: 6px; }
+
+.filter-btn {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.filter-btn.active { color: var(--text); border-color: var(--accent); color: var(--accent); }
+
+.refresh-btn {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-left: auto;
+}
+.refresh-btn:hover { border-color: var(--accent); }
+
+.jobs-wrap { overflow-x: auto; }
+
+.job-row {
+  display: grid;
+  grid-template-columns: 3px 80px 1fr 130px 190px;
+  align-items: center;
+  gap: 0 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 9px 12px 9px 0;
+  margin-bottom: 7px;
+  font-size: 13px;
+  min-width: 600px;
+}
+.job-row .stripe { align-self: stretch; border-radius: 3px; margin-left: -1px; }
+.job-row[data-state="RUNNING"] .stripe { background: var(--accent); }
+.job-row[data-state="PENDING"] .stripe { background: var(--warn); }
+.job-row[data-state="OTHER"] .stripe { background: var(--danger); }
+.job-row .id { color: var(--muted); padding-left: 10px; font-family: monospace; font-size: 12px; }
+.job-row .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.job-row .tags { color: var(--muted); font-size: 11px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.job-row .partition { color: var(--muted); font-size: 12px; }
+.job-row .side { text-align: right; color: var(--muted); font-size: 12px; font-family: ui-monospace, monospace; }
+
+.job-row-head {
+  display: grid;
+  grid-template-columns: 3px 80px 1fr 130px 190px;
+  padding: 0 12px 6px 0;
+  min-width: 600px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.job-row-head .id { padding-left: 10px; }
+.job-row-head .side { text-align: right; }
+
+.empty { color: var(--muted); font-size: 13px; padding: 20px 0; }

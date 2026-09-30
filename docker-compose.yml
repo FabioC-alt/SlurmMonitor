@@ -1,0 +1,12 @@
+services:
+  slurmmonitor:
+    build: .
+    container_name: slurmmonitor
+    ports:
+      - "${HOST_PORT:-80}:8091"
+    volumes:
+      - ${SSH_DIR}:/ssh-host:ro
+    environment:
+      - SLURM_SSH_HOST=${SLURM_SSH_HOST:-disi}
+      - REFRESH_INTERVAL_SECONDS=${REFRESH_INTERVAL_SECONDS:-20}
+    restart: unless-stopped

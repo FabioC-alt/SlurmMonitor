@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SlurmMonitor</title>
+<script>
+  // Served at different external roots depending on how it's reached:
+  // directly, or behind a reverse-proxy path prefix (e.g. Tailscale Serve
+  // mounting this app under /slurm alongside sibling apps at other
+  // subpaths -- the prefix is stripped before requests ever reach this
+  // backend, so the server can't know its own mount point).
+  // window.location.pathname reflects the real external path though, so
+  // use it to make every relative asset/API reference below resolve
+  // correctly regardless of where we're mounted.
+  (function () {
+    var path = window.location.pathname;
+    var base = document.createElement("base");
+    base.href = path.endsWith("/") ? path : path + "/";
+    document.head.appendChild(base);
+  })();
+</script>
+<link rel="stylesheet" href="static/style.css?v=2">
+</head>
+<body>
+<header>
+  <h1>SlurmMonitor</h1>
+  <div class="subtitle">My jobs &mdash; disi-cluster</div>
+  <div class="header-status" id="header-status">connecting&hellip;</div>
+</header>
+<main>
+  <div class="grid" id="stat-cards"></div>
+
+  <div class="controls">
+    <input id="search" type="text" placeholder="Filter by job name&hellip;">
+    <div class="state-filters" id="state-filters">
+      <button class="filter-btn active" data-state="ALL">All</button>
+      <button class="filter-btn" data-state="RUNNING">Running</button>
+      <button class="filter-btn" data-state="PENDING">Pending</button>
+      <button class="filter-btn" data-state="OTHER">Other</button>
+    </div>
+    <select id="partition-filter"><option value="ALL">All partitions</option></select>
+    <button id="refresh-btn" class="refresh-btn">Refresh now</button>
+  </div>
+
+  <div class="section-title">Jobs</div>
+  <div class="section-note" id="jobs-note"></div>
+  <div class="jobs-wrap"><div id="jobs-list"></div></div>
+</main>
+<script src="static/app.js?v=2"></script>
+</body>
+</html>
