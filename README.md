@@ -7,6 +7,8 @@ backend polls `squeue -u $USER` over SSH and serves a dark-themed dashboard
 
 ![status](https://img.shields.io/badge/status-personal%20project-informational)
 
+![SlurmMonitor screenshot](docs/screenshot.jpg)
+
 ## Features
 
 - **Live**: backend re-polls SSH every 20s (configurable); frontend re-polls
