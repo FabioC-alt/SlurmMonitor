@@ -89,33 +89,36 @@ def send_telegram(text: str) -> None:
 
 
 def format_watched_jobs() -> str:
-    """Format the list of watched jobs for Telegram."""
+    """Format the list of active watched jobs (waiting or running) for Telegram."""
     with _lock:
         watched_copy = dict(_watched)
         jobs_map = {j["job_id"]: j for j in _state.get("jobs", [])}
         error = _state.get("error")
 
-    if not watched_copy:
-        return "ℹ️ No jobs are currently watched."
+    # Filter to only jobs that are currently active in the queue (running, pending, etc.)
+    active_watched = [
+        (jid, jname, jobs_map[jid])
+        for jid, jname in watched_copy.items()
+        if jid in jobs_map
+    ]
 
-    lines = ["📋 <b>Watched Jobs:</b>"]
-    for job_id, default_name in watched_copy.items():
-        job = jobs_map.get(job_id)
-        if job:
-            state = job.get("state", "UNKNOWN")
-            name = job.get("name", default_name)
-            time_used = job.get("time_used", "0:00")
-            time_limit = job.get("time_limit", "")
-            partition = job.get("partition", "")
-            reason = job.get("reason", "")
-            time_str = f"{time_used}/{time_limit}" if time_limit else time_used
-            
-            icon = "🟢" if state == "RUNNING" else ("🟡" if state == "PENDING" else "⚪")
-            lines.append(f"\n{icon} <b>{name}</b> (<code>#{job_id}</code>)")
-            lines.append(f"   State: <b>{state}</b> ({reason})")
-            lines.append(f"   Time: {time_str} · Partition: {partition}")
-        else:
-            lines.append(f"\n⚪ <b>{default_name}</b> (<code>#{job_id}</code>) — <i>not in queue / finished</i>")
+    if not active_watched:
+        return "ℹ️ No watched jobs are currently waiting or running in the queue."
+
+    lines = ["📋 <b>Active Watched Jobs:</b>"]
+    for job_id, default_name, job in active_watched:
+        state = job.get("state", "UNKNOWN")
+        name = job.get("name", default_name)
+        time_used = job.get("time_used", "0:00")
+        time_limit = job.get("time_limit", "")
+        partition = job.get("partition", "")
+        reason = job.get("reason", "")
+        time_str = f"{time_used}/{time_limit}" if time_limit else time_used
+        
+        icon = "🟢" if state == "RUNNING" else ("🟡" if state == "PENDING" else "⚪")
+        lines.append(f"\n{icon} <b>{name}</b> (<code>#{job_id}</code>)")
+        lines.append(f"   State: <b>{state}</b> ({reason})")
+        lines.append(f"   Time: {time_str} · Partition: {partition}")
 
     if error:
         lines.append(f"\n⚠️ <i>Last cluster error: {error}</i>")
@@ -224,6 +227,8 @@ def _apply_and_notify(outcome: dict[str, Any]) -> dict[str, Any]:
                             f"🏁 <b>{job_name}</b> (#{job_id}) has left the queue.\n"
                             f"Previous state: {prev}"
                         )
+                    # Clean up finished job from watched map so it doesn't linger
+                    _watched.pop(job_id, None)
                 else:
                     curr = new_map[job_id]["state"]
                     if prev is not None and curr != prev:
