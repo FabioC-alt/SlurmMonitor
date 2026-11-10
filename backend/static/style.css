@@ -119,7 +119,7 @@ main {
 
 .job-row {
   display: grid;
-  grid-template-columns: 3px 80px 1fr 130px 190px;
+  grid-template-columns: 3px 80px 1fr 130px 190px 56px;
   align-items: center;
   gap: 0 14px;
   background: var(--panel);
@@ -128,7 +128,7 @@ main {
   padding: 9px 12px 9px 0;
   margin-bottom: 7px;
   font-size: 13px;
-  min-width: 600px;
+  min-width: 660px;
 }
 .job-row .stripe { align-self: stretch; border-radius: 3px; margin-left: -1px; }
 .job-row[data-state="RUNNING"] .stripe { background: var(--accent); }
@@ -142,9 +142,9 @@ main {
 
 .job-row-head {
   display: grid;
-  grid-template-columns: 3px 80px 1fr 130px 190px;
+  grid-template-columns: 3px 80px 1fr 130px 190px 56px;
   padding: 0 12px 6px 0;
-  min-width: 600px;
+  min-width: 660px;
   color: var(--muted);
   font-size: 11px;
   text-transform: uppercase;
@@ -154,3 +154,35 @@ main {
 .job-row-head .side { text-align: right; }
 
 .empty { color: var(--muted); font-size: 13px; padding: 20px 0; }
+
+.notify-col { justify-self: center; }
+.job-row-head .notify-col { justify-self: center; }
+
+.switch { position: relative; display: inline-block; width: 34px; height: 18px; cursor: pointer; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch .slider {
+  position: absolute; inset: 0;
+  background: var(--panel-border);
+  border-radius: 18px;
+  transition: background 0.15s;
+}
+.switch .slider::before {
+  content: "";
+  position: absolute; left: 2px; top: 2px;
+  width: 14px; height: 14px;
+  background: var(--muted);
+  border-radius: 50%;
+  transition: transform 0.15s, background 0.15s;
+}
+.switch input:checked + .slider { background: rgba(91, 195, 255, 0.25); }
+.switch input:checked + .slider::before { transform: translateX(16px); background: var(--accent); }
+.switch input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.notify-hint {
+  color: var(--warn);
+  background: rgba(240, 181, 89, 0.12);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}

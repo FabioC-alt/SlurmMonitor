@@ -17,4 +17,11 @@ if [ -d /ssh-host ]; then
   [ -f /root/.ssh/id_rsa.pub ] && chmod 644 /root/.ssh/id_rsa.pub
 fi
 
-exec uvicorn backend.main:app --host 0.0.0.0 --port 8091
+# Serve HTTPS when a cert/key pair is mounted at /certs (browsers only allow
+# notifications on secure origins). Without them, fall back to plain HTTP.
+TLS_ARGS=""
+if [ -f /certs/cert.pem ] && [ -f /certs/key.pem ]; then
+  TLS_ARGS="--ssl-certfile /certs/cert.pem --ssl-keyfile /certs/key.pem"
+fi
+
+exec uvicorn backend.main:app --host 0.0.0.0 --port 8091 $TLS_ARGS

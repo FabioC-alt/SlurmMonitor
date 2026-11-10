@@ -18,6 +18,10 @@ backend polls `squeue -u $USER` over SSH and serves a dark-themed dashboard
   only ever sees their own jobs, never a hardcoded username.
 - **Filters**: free-text search by job name, state filter (Running / Pending
   / Other), and a partition dropdown, all client-side and instant.
+- **Telegram notifications**: every job row has a toggle switch. Turn it
+  on and the backend sends a Telegram alert whenever that job changes state
+  (e.g. `PENDING` → `RUNNING`) or leaves the queue (finished/cancelled).
+  Works across sessions without needing a browser tab open.
 - **At a glance**: total jobs, running count, pending count, and how many
   partitions you currently have jobs in.
 - **Reverse-proxy friendly**: the page detects its own mount path at
@@ -56,8 +60,11 @@ SlurmMonitor/
 │   ├── main.py              FastAPI app: SSH polling, /api/* endpoints
 │   └── static/
 │       ├── index.html       Single-page dashboard shell
-│       ├── app.js           Fetch/render/filter logic
+│       ├── app.js           Fetch/render/filter logic, notification toggles
+│       ├── watch-logic.js   Pure "which watched jobs finished" logic (unit-tested)
 │       └── style.css        Dark theme (FrostLine-inspired)
+├── tests/                    node:test unit tests for watch-logic.js
+├── certs/                    your local TLS cert + key (gitignored, see below)
 ├── Dockerfile                python:3.12-slim + openssh-client
 ├── docker-compose.yml         port mapping + SSH dir mount + env
 ├── entrypoint.sh              copies/chmods the mounted SSH dir, then boots uvicorn
@@ -95,6 +102,19 @@ Then open **http://localhost:8091** (or whatever `HOST_PORT` you set).
 | `HOST_PORT` | Port exposed on the host |
 | `SLURM_SSH_HOST` | SSH alias/host to run `squeue` on |
 | `REFRESH_INTERVAL_SECONDS` | How often the backend re-polls SSH |
+| `TELEGRAM_BOT_TOKEN` | (Optional) Telegram bot token from @BotFather |
+| `TELEGRAM_CHAT_ID` | (Optional) Your Telegram user or group chat ID |
+
+## Telegram notifications
+
+When `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set in `.env`:
+1. Toggle the notify switch on any job in the dashboard.
+2. The backend monitors state changes in each poll cycle.
+3. You receive instant Telegram alerts:
+   - State transition: `🔄 <job> (#id) changed state: PENDING → RUNNING`
+   - Completion / exit: `🏁 <job> (#id) has left the queue.`
+
+No browser tab needs to remain open for alerts to fire.
 
 ## Set up on a new machine (e.g. handing this to a colleague)
 
@@ -144,13 +164,44 @@ generally use.
 - **Port already in use** — change `HOST_PORT` in `.env` and re-run
   `docker compose up -d --build`.
 
-## Viewing it as a local hostname (e.g. `slurmMonitor.local`)
+## Browser notifications and HTTPS
 
-Add a hosts-file entry yourself (this edits a system file, so it's not
-automated here) — on Windows, from an **Administrator** PowerShell:
+Browsers only allow notifications on **secure origins**: `https://...` or
+`http://localhost`. Plain `http://slurmMonitor.local:8091` does *not*
+qualify, so to get notifications on that name, serve the app over HTTPS
+with a certificate your machine trusts. The container does this
+automatically when `certs/cert.pem` and `certs/key.pem` exist.
 
-```powershell
-Add-Content -Path C:\Windows\System32\drivers\etc\hosts -Value "`n127.0.0.1 slurmMonitor.local"
+One-time setup (these steps change your system's trust store and hosts
+file, so you run them yourself):
+
+1. Install [mkcert](https://github.com/FiloSottile/mkcert), e.g.
+   `winget install FiloSottile.mkcert` (Windows) or `brew install mkcert` (macOS).
+2. Create and trust a local CA: `mkcert -install`
+3. Generate the cert into this project's `certs/` folder:
+   ```bash
+   mkcert -cert-file certs/cert.pem -key-file certs/key.pem slurmMonitor.local localhost
+   ```
+4. Map the name to your machine. On Windows, from an **Administrator** PowerShell:
+   ```powershell
+   Add-Content -Path C:\Windows\System32\drivers\etc\hosts -Value "`n127.0.0.1 slurmMonitor.local"
+   ```
+5. `docker compose up -d --build`, then open `https://slurmMonitor.local:8091`
+   (or your `HOST_PORT`) and allow notifications when the browser asks.
+
+Notes:
+
+- `certs/` is gitignored — never commit the key. Without certs the app falls
+  back to plain HTTP and notifications only work on `http://localhost`.
+- Notifications are fired by the open dashboard tab (it detects that a job
+  is gone from the queue). Close the tab and you won't be notified; a job
+  that finished in the meantime is reported the next time you open it.
+- "Finished" means "no longer in `squeue`" — it doesn't say whether the job
+  succeeded or failed.
+- OS settings such as Windows Focus Assist can still silence notifications.
+
+## Tests
+
+```bash
+node --test tests/watch-logic.test.js
 ```
-
-Then open `http://slurmMonitor.local:8091` (or your `HOST_PORT`).
