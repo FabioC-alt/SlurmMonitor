@@ -105,7 +105,7 @@ Then open **http://localhost:8091** (or whatever `HOST_PORT` you set).
 | `TELEGRAM_BOT_TOKEN` | (Optional) Telegram bot token from @BotFather |
 | `TELEGRAM_CHAT_ID` | (Optional) Your Telegram user or group chat ID |
 
-## Telegram notifications
+## Telegram notifications & Bot commands
 
 When `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set in `.env`:
 1. Toggle the notify switch on any job in the dashboard.
@@ -114,7 +114,12 @@ When `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set in `.env`:
    - State transition: `🔄 <job> (#id) changed state: PENDING → RUNNING`
    - Completion / exit: `🏁 <job> (#id) has left the queue.`
 
-No browser tab needs to remain open for alerts to fire.
+**Bot Commands:**
+You can message your bot directly at any time:
+- `/watched` (or `/status`) — Lists all currently watched jobs, their current state (RUNNING, PENDING), time used, time limit, and partition.
+- `/help` — Lists available commands.
+
+No browser tab needs to remain open for alerts or commands to work.
 
 ## Set up on a new machine (e.g. handing this to a colleague)
 

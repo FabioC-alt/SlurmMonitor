@@ -88,6 +88,86 @@ def send_telegram(text: str) -> None:
         print(f"Telegram send failed: {exc}", flush=True)
 
 
+def format_watched_jobs() -> str:
+    """Format the list of watched jobs for Telegram."""
+    with _lock:
+        watched_copy = dict(_watched)
+        jobs_map = {j["job_id"]: j for j in _state.get("jobs", [])}
+        error = _state.get("error")
+
+    if not watched_copy:
+        return "ℹ️ No jobs are currently watched."
+
+    lines = ["📋 <b>Watched Jobs:</b>"]
+    for job_id, default_name in watched_copy.items():
+        job = jobs_map.get(job_id)
+        if job:
+            state = job.get("state", "UNKNOWN")
+            name = job.get("name", default_name)
+            time_used = job.get("time_used", "0:00")
+            time_limit = job.get("time_limit", "")
+            partition = job.get("partition", "")
+            reason = job.get("reason", "")
+            time_str = f"{time_used}/{time_limit}" if time_limit else time_used
+            
+            icon = "🟢" if state == "RUNNING" else ("🟡" if state == "PENDING" else "⚪")
+            lines.append(f"\n{icon} <b>{name}</b> (<code>#{job_id}</code>)")
+            lines.append(f"   State: <b>{state}</b> ({reason})")
+            lines.append(f"   Time: {time_str} · Partition: {partition}")
+        else:
+            lines.append(f"\n⚪ <b>{default_name}</b> (<code>#{job_id}</code>) — <i>not in queue / finished</i>")
+
+    if error:
+        lines.append(f"\n⚠️ <i>Last cluster error: {error}</i>")
+
+    return "\n".join(lines)
+
+
+def telegram_listener_loop() -> None:
+    """Long-polling listener for Telegram bot commands (/watched, /status, /help)."""
+    if not TELEGRAM_BOT_TOKEN:
+        return
+
+    offset = 0
+    while True:
+        try:
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates?timeout=25&offset={offset}"
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req, timeout=35) as resp:
+                data = json.loads(resp.read().decode())
+
+            for update in data.get("result", []):
+                offset = max(offset, update["update_id"] + 1)
+                msg = update.get("message", {})
+                text = msg.get("text", "").strip()
+                chat_id = str(msg.get("chat", {}).get("id", ""))
+
+                # Security: Only answer to configured chat ID if TELEGRAM_CHAT_ID is set
+                if TELEGRAM_CHAT_ID and chat_id != str(TELEGRAM_CHAT_ID):
+                    continue
+
+                cmd = text.split()[0].lower() if text else ""
+                # Strip @botname if called in a group (e.g. /watched@MyBot)
+                cmd = cmd.split("@")[0]
+
+                if cmd in ("/watched", "/status"):
+                    reply = format_watched_jobs()
+                    send_telegram(reply)
+                elif cmd in ("/start", "/help"):
+                    help_text = (
+                        "🤖 <b>SlurmMonitor Bot</b>\n\n"
+                        "Commands:\n"
+                        "/watched - List all watched jobs and their live states\n"
+                        "/status - Same as /watched\n"
+                        "/help - Show this message"
+                    )
+                    send_telegram(help_text)
+        except Exception as e:
+            # Sleep briefly on error to avoid tight loops on connection hiccups
+            time.sleep(5)
+
+
+
 def fetch_jobs() -> dict[str, Any]:
     try:
         result = subprocess.run(
@@ -175,6 +255,8 @@ def poll_loop() -> None:
 
 
 threading.Thread(target=poll_loop, daemon=True).start()
+if TELEGRAM_BOT_TOKEN:
+    threading.Thread(target=telegram_listener_loop, daemon=True).start()
 
 
 @app.get("/api/jobs")
